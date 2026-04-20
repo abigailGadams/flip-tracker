@@ -316,9 +316,7 @@ export default function FlipTimeline() {
       {/* ── Header ── */}
       <header style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button onClick={() => { setView("home"); if (user) fetchAllProjects(); }} style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <TrendingUp size={20} color="#fff" />
-          </div>
+          <img src="/favicon.svg" alt="FlipTimeline" style={{ width: 36, height: 36, borderRadius: 10 }} />
           <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>FlipTimeline</div>
             <div style={{ fontSize: 12, color: "#94a3b8" }}>Renovation Project Tracker</div>

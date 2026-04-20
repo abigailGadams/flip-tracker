@@ -1,10 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#6366f1"/>
       <stop offset="100%" stop-color="#8b5cf6"/>
     </linearGradient>
   </defs>
-  <rect width="36" height="36" rx="8" fill="url(#g)"/>
-  <path d="M10 24 L14 12 L18 18 L22 10 L26 16" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- House roofline -->
+  <path d="M256 110 L390 220 L122 220 Z" fill="none" stroke="#ffffff" stroke-width="22" stroke-linejoin="round" opacity="0.85"/>
+  <!-- Upward trending arrow through the house (the "flip") -->
+  <path d="M145 350 L225 265 L290 310 L375 195" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Arrow head -->
+  <path d="M355 175 L375 195 L350 215" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Timeline dots at bottom -->
+  <circle cx="176" cy="400" r="12" fill="#ffffff" opacity="0.4"/>
+  <circle cx="236" cy="400" r="12" fill="#ffffff" opacity="0.6"/>
+  <circle cx="296" cy="400" r="12" fill="#ffffff" opacity="0.8"/>
+  <circle cx="356" cy="400" r="12" fill="#ffffff" opacity="1"/>
+  <!-- Connecting line between dots -->
+  <line x1="188" y1="400" x2="344" y2="400" stroke="#ffffff" stroke-width="4" opacity="0.3"/>
 </svg>
