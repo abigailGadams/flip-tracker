@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { Plus, Trash2, Check, Clock, DollarSign, CalendarDays, LayoutList, BarChart3, FolderOpen, ChevronDown, ChevronRight, AlertTriangle, TrendingUp, Home, Hammer, Paintbrush, Wrench, Zap, CheckCircle2, Circle, X, Edit3, Save } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Plus, Trash2, Check, Clock, DollarSign, CalendarDays, LayoutList, BarChart3, FolderOpen, ChevronDown, ChevronRight, AlertTriangle, TrendingUp, Home, Hammer, Paintbrush, Wrench, Zap, CheckCircle2, Circle, X, Edit3, Save, LogOut, User, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase";
+import AuthModal from "./AuthModal";
+import ProjectsDrawer from "./ProjectsDrawer";
 
 // ─── Data & Constants ────────────────────────────────────────────────
 const PHASES = [
@@ -85,8 +88,7 @@ const TEMPLATES = [
   },
 ];
 
-let nextId = 1;
-const genId = () => nextId++;
+const genId = () => crypto.randomUUID();
 
 function addDays(date, days) {
   const d = new Date(date);
@@ -113,6 +115,109 @@ export default function FlipTimeline() {
   const [showNewTask, setShowNewTask] = useState(false);
   const [showTemplates, setShowTemplates] = useState(tasks.length === 0);
   const [expandedPhases, setExpandedPhases] = useState(PHASES.reduce((a, p) => ({ ...a, [p.id]: true }), {}));
+
+  // Auth & persistence
+  const [user, setUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProjects, setShowProjects] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [pendingSave, setPendingSave] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const saveProject = useCallback(async () => {
+    if (!user) {
+      setPendingSave(true);
+      setShowAuthModal(true);
+      return;
+    }
+    setSaving(true);
+    const supabase = createClient();
+    const projectData = {
+      user_id: user.id,
+      project_name: projectName,
+      start_date: startDate,
+      total_budget: totalBudget,
+      tasks: tasks,
+    };
+    if (currentProjectId) {
+      await supabase.from("flip_projects").update(projectData).eq("id", currentProjectId);
+    } else {
+      const { data } = await supabase.from("flip_projects").insert(projectData).select("id").single();
+      if (data) setCurrentProjectId(data.id);
+    }
+    setSaving(false);
+    setLastSaved(new Date());
+  }, [user, projectName, startDate, totalBudget, tasks, currentProjectId]);
+
+  // Auto-save after auth if save was pending
+  useEffect(() => {
+    if (!user || !pendingSave) return;
+    setPendingSave(false);
+    (async () => {
+      setSaving(true);
+      const supabase = createClient();
+      const projectData = {
+        user_id: user.id,
+        project_name: projectName,
+        start_date: startDate,
+        total_budget: totalBudget,
+        tasks: tasks,
+      };
+      if (currentProjectId) {
+        await supabase.from("flip_projects").update(projectData).eq("id", currentProjectId);
+      } else {
+        const { data } = await supabase.from("flip_projects").insert(projectData).select("id").single();
+        if (data) setCurrentProjectId(data.id);
+      }
+      setSaving(false);
+      setLastSaved(new Date());
+    })();
+  }, [user, pendingSave]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadProject = useCallback(async (projectId) => {
+    const supabase = createClient();
+    const { data } = await supabase.from("flip_projects").select("*").eq("id", projectId).single();
+    if (data) {
+      setProjectName(data.project_name);
+      setStartDate(data.start_date);
+      setTotalBudget(data.total_budget);
+      setTasks(data.tasks || []);
+      setCurrentProjectId(data.id);
+      setLastSaved(new Date(data.updated_at));
+      setShowProjects(false);
+      setShowTemplates(false);
+    }
+  }, []);
+
+  const handleNewProject = useCallback(() => {
+    setProjectName("My First Flip");
+    setStartDate(new Date().toISOString().slice(0, 10));
+    setTotalBudget(75000);
+    setTasks([]);
+    setCurrentProjectId(null);
+    setLastSaved(null);
+    setShowTemplates(true);
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    setCurrentProjectId(null);
+    setLastSaved(null);
+  };
 
   // New task form
   const [newTask, setNewTask] = useState({ title: "", phase: "acquisition", budget: 0, startDate: startDate, duration: 1 });
@@ -196,17 +301,73 @@ export default function FlipTimeline() {
             <div style={{ fontSize: 12, color: "#94a3b8" }}>Renovation Project Tracker</div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {editingName ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input value={projectName} onChange={(e) => setProjectName(e.target.value)} style={{ fontSize: 14, padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none" }} autoFocus onKeyDown={(e) => e.key === "Enter" && setEditingName(false)} />
               <button onClick={() => setEditingName(false)} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 6, padding: "6px 10px", cursor: "pointer", fontSize: 13 }}>
-                <Save size={14} />
+                <Check size={14} />
               </button>
             </div>
           ) : (
             <button onClick={() => setEditingName(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#334155" }}>
               <FolderOpen size={16} color="#64748b" /> {projectName} <Edit3 size={13} color="#94a3b8" />
+            </button>
+          )}
+
+          <div style={{ width: 1, height: 24, background: "#e2e8f0" }} />
+
+          {/* Save Project */}
+          <button
+            onClick={saveProject}
+            disabled={saving}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 600,
+              background: lastSaved ? "#f0fdf4" : "#6366f1", color: lastSaved ? "#16a34a" : "#fff",
+              border: lastSaved ? "1px solid #bbf7d0" : "none", borderRadius: 8, cursor: saving ? "not-allowed" : "pointer",
+              transition: "all 0.15s", opacity: saving ? 0.7 : 1,
+            }}
+          >
+            {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
+            {saving ? "Saving..." : lastSaved ? "Saved" : "Save Project"}
+          </button>
+
+          {/* My Projects (only when signed in) */}
+          {user && (
+            <button
+              onClick={() => setShowProjects(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 500,
+                background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer",
+              }}
+            >
+              <FolderOpen size={14} /> My Projects
+            </button>
+          )}
+
+          {/* User / Auth */}
+          {user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <User size={14} color="#fff" />
+              </div>
+              <button
+                onClick={handleSignOut}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", alignItems: "center" }}
+                title="Sign out"
+              >
+                <LogOut size={14} color="#94a3b8" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 500,
+                background: "none", color: "#6366f1", border: "1px solid #e2e8f0", borderRadius: 8, cursor: "pointer",
+              }}
+            >
+              <User size={14} /> Sign In
             </button>
           )}
         </div>
@@ -639,6 +800,22 @@ export default function FlipTimeline() {
       <footer style={{ textAlign: "center", padding: "24px 0 16px", fontSize: 11, color: "#cbd5e1" }}>
         FlipTimeline MVP &middot; Built for property flippers
       </footer>
+
+      {/* ── Modals ── */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => { setShowAuthModal(false); setPendingSave(false); }}
+        onAuthSuccess={() => setShowAuthModal(false)}
+      />
+      <ProjectsDrawer
+        isOpen={showProjects}
+        onClose={() => setShowProjects(false)}
+        onLoadProject={loadProject}
+        onNewProject={handleNewProject}
+        currentProjectId={currentProjectId}
+      />
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
