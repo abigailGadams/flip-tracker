@@ -106,7 +106,7 @@ function daysBetween(a, b) {
 
 // ─── Main App ────────────────────────────────────────────────────────
 export default function FlipTimeline() {
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState("home");
   const [projectName, setProjectName] = useState("My First Flip");
   const [editingName, setEditingName] = useState(false);
   const [tasks, setTasks] = useState([]);
@@ -124,18 +124,36 @@ export default function FlipTimeline() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [pendingSave, setPendingSave] = useState(false);
+  const [allProjects, setAllProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
+  const fetchAllProjects = useCallback(async () => {
+    const supabase = createClient();
+    if (!supabase) return;
+    setLoadingProjects(true);
+    const { data } = await supabase
+      .from("flip_projects")
+      .select("id, project_name, start_date, updated_at, total_budget, tasks")
+      .order("updated_at", { ascending: false });
+    setAllProjects(data || []);
+    setLoadingProjects(false);
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) fetchAllProjects();
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) fetchAllProjects();
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchAllProjects]);
 
   const saveProject = useCallback(async () => {
     if (!user) {
@@ -160,7 +178,8 @@ export default function FlipTimeline() {
     }
     setSaving(false);
     setLastSaved(new Date());
-  }, [user, projectName, startDate, totalBudget, tasks, currentProjectId]);
+    fetchAllProjects();
+  }, [user, projectName, startDate, totalBudget, tasks, currentProjectId, fetchAllProjects]);
 
   // Auto-save after auth if save was pending
   useEffect(() => {
@@ -199,6 +218,7 @@ export default function FlipTimeline() {
       setLastSaved(new Date(data.updated_at));
       setShowProjects(false);
       setShowTemplates(false);
+      setView("dashboard");
     }
   }, []);
 
@@ -210,6 +230,7 @@ export default function FlipTimeline() {
     setCurrentProjectId(null);
     setLastSaved(null);
     setShowTemplates(true);
+    setView("dashboard");
   }, []);
 
   const handleSignOut = async () => {
@@ -282,6 +303,7 @@ export default function FlipTimeline() {
 
   // ─── Styles ────────────────────────────────────────────────────────
   const NAV_ITEMS = [
+    { id: "home", label: "Projects", icon: Home },
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
     { id: "tasks", label: "Tasks", icon: LayoutList },
     { id: "timeline", label: "Timeline", icon: CalendarDays },
@@ -293,15 +315,15 @@ export default function FlipTimeline() {
     <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Header ── */}
       <header style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={() => { setView("home"); if (user) fetchAllProjects(); }} style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <TrendingUp size={20} color="#fff" />
           </div>
-          <div>
+          <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>FlipTimeline</div>
             <div style={{ fontSize: 12, color: "#94a3b8" }}>Renovation Project Tracker</div>
           </div>
-        </div>
+        </button>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {editingName ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -396,6 +418,147 @@ export default function FlipTimeline() {
       </nav>
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: 24 }}>
+        {/* ── Projects Home View ── */}
+        {view === "home" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" }}>My Projects</div>
+                <div style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
+                  {user ? `${allProjects.length} saved project${allProjects.length !== 1 ? "s" : ""}` : "Sign in to save and manage your projects"}
+                </div>
+              </div>
+              <button
+                onClick={handleNewProject}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", fontSize: 14, fontWeight: 600,
+                  background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer",
+                }}
+              >
+                <Plus size={16} /> New Project
+              </button>
+            </div>
+
+            {!user ? (
+              <div style={{ textAlign: "center", padding: 64, background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0" }}>
+                <FolderOpen size={48} color="#cbd5e1" style={{ marginBottom: 16 }} />
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Sign in to view your projects</div>
+                <div style={{ fontSize: 14, color: "#64748b", marginBottom: 20, maxWidth: 400, margin: "0 auto 20px" }}>
+                  Create an account or sign in to save renovation projects and access them from anywhere.
+                </div>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", fontSize: 14, fontWeight: 600,
+                    background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer",
+                  }}
+                >
+                  <User size={16} /> Sign In
+                </button>
+              </div>
+            ) : loadingProjects ? (
+              <div style={{ textAlign: "center", padding: 64, color: "#94a3b8" }}>
+                <Loader2 size={32} style={{ animation: "spin 1s linear infinite", marginBottom: 12 }} />
+                <div style={{ fontSize: 14 }}>Loading projects...</div>
+              </div>
+            ) : allProjects.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 64, background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0" }}>
+                <FolderOpen size={48} color="#cbd5e1" style={{ marginBottom: 16 }} />
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>No projects yet</div>
+                <div style={{ fontSize: 14, color: "#64748b", marginBottom: 20 }}>
+                  Create your first renovation project to get started.
+                </div>
+                <button
+                  onClick={handleNewProject}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", fontSize: 14, fontWeight: 600,
+                    background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer",
+                  }}
+                >
+                  <Plus size={16} /> Create Project
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+                {allProjects.map((project) => {
+                  const taskCount = Array.isArray(project.tasks) ? project.tasks.length : 0;
+                  const completedCount = Array.isArray(project.tasks) ? project.tasks.filter((t) => t.status === "done").length : 0;
+                  const pct = taskCount > 0 ? Math.round((completedCount / taskCount) * 100) : 0;
+                  const isCurrent = project.id === currentProjectId;
+                  const spent = Array.isArray(project.tasks) ? project.tasks.reduce((s, t) => s + (t.budget || 0), 0) : 0;
+
+                  return (
+                    <button
+                      key={project.id}
+                      onClick={() => loadProject(project.id)}
+                      style={{
+                        textAlign: "left", background: isCurrent ? "#eef2ff" : "#fff",
+                        border: `1px solid ${isCurrent ? "#6366f1" : "#e2e8f0"}`, borderRadius: 16, padding: 24,
+                        cursor: "pointer", transition: "all 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                        display: "flex", flexDirection: "column", gap: 16,
+                      }}
+                      onMouseEnter={(e) => { if (!isCurrent) { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(99,102,241,0.1)"; } }}
+                      onMouseLeave={(e) => { if (!isCurrent) { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; } }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                            <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{project.project_name}</span>
+                            {isCurrent && (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", background: "#6366f1", color: "#fff", borderRadius: 6 }}>
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#94a3b8", display: "flex", alignItems: "center", gap: 4 }}>
+                            <Clock size={11} />
+                            {new Date(project.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>{completedCount}/{taskCount} tasks</span>
+                          <span style={{ fontSize: 12, color: "#94a3b8" }}>{pct}%</span>
+                        </div>
+                        <div style={{ height: 6, background: "#f1f5f9", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg, #6366f1, #8b5cf6)", borderRadius: 3, transition: "width 0.3s" }} />
+                        </div>
+                      </div>
+
+                      {/* Budget */}
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                        <span style={{ color: "#64748b" }}>Budget</span>
+                        <span style={{ fontWeight: 700, color: spent > project.total_budget ? "#ef4444" : "#0f172a" }}>
+                          {formatCurrency(spent)} / {formatCurrency(project.total_budget)}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {/* New project card */}
+                <button
+                  onClick={handleNewProject}
+                  style={{
+                    textAlign: "left", background: "#f8fafc", border: "2px dashed #cbd5e1", borderRadius: 16,
+                    padding: 24, cursor: "pointer", transition: "all 0.15s",
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                    minHeight: 180,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; }}
+                >
+                  <Plus size={28} color="#94a3b8" />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>New Project</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Template Chooser ── */}
         {showTemplates && tasks.length === 0 && (
           <div style={{ marginBottom: 24 }}>
