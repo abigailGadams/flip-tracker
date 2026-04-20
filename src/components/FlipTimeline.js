@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, Trash2, Check, Clock, DollarSign, CalendarDays, LayoutList, BarChart3, FolderOpen, ChevronDown, ChevronRight, AlertTriangle, TrendingUp, Home, Hammer, Paintbrush, Wrench, Zap, CheckCircle2, Circle, X, Edit3, Save, LogOut, User, Loader2 } from "lucide-react";
+import { Plus, Trash2, Check, Clock, DollarSign, CalendarDays, LayoutList, BarChart3, FolderOpen, ChevronDown, ChevronRight, AlertTriangle, TrendingUp, Home, Hammer, Paintbrush, Wrench, Zap, CheckCircle2, Circle, X, Edit3, Save, LogOut, User, Loader2, Menu } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "./AuthModal";
 import ProjectsDrawer from "./ProjectsDrawer";
@@ -115,6 +115,7 @@ export default function FlipTimeline() {
   const [showNewTask, setShowNewTask] = useState(false);
   const [showTemplates, setShowTemplates] = useState(tasks.length === 0);
   const [expandedPhases, setExpandedPhases] = useState(PHASES.reduce((a, p) => ({ ...a, [p.id]: true }), {}));
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Auth & persistence
   const [user, setUser] = useState(null);
@@ -315,7 +316,7 @@ export default function FlipTimeline() {
     <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Header ── */}
       <header className="app-header" style={{ background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
-        <button onClick={() => { setView("home"); if (user) fetchAllProjects(); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+        <button onClick={() => { setView("home"); if (user) fetchAllProjects(); setMobileMenuOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
           <img src="/favicon.svg" alt="FlipTimeline" style={{ width: 32, height: 32, borderRadius: 8 }} />
           <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>FlipTimeline</div>
@@ -323,6 +324,14 @@ export default function FlipTimeline() {
           </div>
         </button>
         <div className="header-actions">
+          {/* Hamburger - mobile only */}
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", padding: 6 }}
+          >
+            {mobileMenuOpen ? <X size={22} color="#334155" /> : <Menu size={22} color="#334155" />}
+          </button>
           {editingName ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input value={projectName} onChange={(e) => setProjectName(e.target.value)} style={{ fontSize: 14, padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", width: "auto", maxWidth: 180 }} autoFocus onKeyDown={(e) => e.key === "Enter" && setEditingName(false)} />
@@ -393,6 +402,110 @@ export default function FlipTimeline() {
           )}
         </div>
       </header>
+
+      {/* ── Mobile Menu ── */}
+      {mobileMenuOpen && (
+        <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 900 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 0, right: 0, width: "75%", maxWidth: 320, height: "100%", background: "#fff", boxShadow: "-4px 0 20px rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", padding: "20px 0" }}>
+            {/* Close */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 20px 16px", borderBottom: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Menu</span>
+              <button onClick={() => setMobileMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+                <X size={20} color="#64748b" />
+              </button>
+            </div>
+
+            {/* Project name */}
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Current Project</div>
+              <button onClick={() => { setEditingName(true); setMobileMenuOpen(false); }} style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                {projectName} <Edit3 size={13} color="#94a3b8" />
+              </button>
+            </div>
+
+            {/* Navigation */}
+            <div style={{ padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+              {NAV_ITEMS.map((n) => {
+                const Icon = n.icon;
+                const active = view === n.id;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => { setView(n.id); setMobileMenuOpen(false); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 20px", fontSize: 15, fontWeight: active ? 600 : 400,
+                      color: active ? "#6366f1" : "#334155", background: active ? "#eef2ff" : "transparent",
+                      border: "none", cursor: "pointer", textAlign: "left", transition: "all 0.15s",
+                    }}
+                  >
+                    <Icon size={18} /> {n.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Actions */}
+            <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+              <button
+                onClick={() => { saveProject(); setMobileMenuOpen(false); }}
+                disabled={saving}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px", fontSize: 14, fontWeight: 600,
+                  background: lastSaved ? "#f0fdf4" : "#6366f1", color: lastSaved ? "#16a34a" : "#fff",
+                  border: lastSaved ? "1px solid #bbf7d0" : "none", borderRadius: 10, cursor: "pointer", width: "100%",
+                }}
+              >
+                {saving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={16} />}
+                {saving ? "Saving..." : lastSaved ? "Saved" : "Save Project"}
+              </button>
+
+              {user && (
+                <button
+                  onClick={() => { setShowProjects(true); setMobileMenuOpen(false); }}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px", fontSize: 14, fontWeight: 500,
+                    background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 10, cursor: "pointer", width: "100%",
+                  }}
+                >
+                  <FolderOpen size={16} /> My Projects
+                </button>
+              )}
+            </div>
+
+            {/* Auth section at bottom */}
+            <div style={{ marginTop: "auto", padding: "16px 20px", borderTop: "1px solid #e2e8f0" }}>
+              {user ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <User size={16} color="#fff" />
+                    </div>
+                    <div style={{ fontSize: 13, color: "#334155", fontWeight: 500, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {user.email}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#94a3b8" }}
+                  >
+                    <LogOut size={14} /> Sign Out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px", fontSize: 14, fontWeight: 600,
+                    background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", width: "100%",
+                  }}
+                >
+                  <User size={16} /> Sign In
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Nav ── */}
       <nav className="app-nav" style={{ background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
