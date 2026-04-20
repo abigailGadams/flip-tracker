@@ -314,43 +314,43 @@ export default function FlipTimeline() {
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Header ── */}
-      <header style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button onClick={() => { setView("home"); if (user) fetchAllProjects(); }} style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-          <img src="/favicon.svg" alt="FlipTimeline" style={{ width: 36, height: 36, borderRadius: 10 }} />
+      <header className="app-header" style={{ background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
+        <button onClick={() => { setView("home"); if (user) fetchAllProjects(); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+          <img src="/favicon.svg" alt="FlipTimeline" style={{ width: 32, height: 32, borderRadius: 8 }} />
           <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>FlipTimeline</div>
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Renovation Project Tracker</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>FlipTimeline</div>
+            <div className="header-brand-subtitle" style={{ fontSize: 12, color: "#94a3b8" }}>Renovation Project Tracker</div>
           </div>
         </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="header-actions">
           {editingName ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} style={{ fontSize: 14, padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none" }} autoFocus onKeyDown={(e) => e.key === "Enter" && setEditingName(false)} />
+              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} style={{ fontSize: 14, padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", width: "auto", maxWidth: 180 }} autoFocus onKeyDown={(e) => e.key === "Enter" && setEditingName(false)} />
               <button onClick={() => setEditingName(false)} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 6, padding: "6px 10px", cursor: "pointer", fontSize: 13 }}>
                 <Check size={14} />
               </button>
             </div>
           ) : (
-            <button onClick={() => setEditingName(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#334155" }}>
+            <button className="project-name-btn" onClick={() => setEditingName(true)} style={{ alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#334155" }}>
               <FolderOpen size={16} color="#64748b" /> {projectName} <Edit3 size={13} color="#94a3b8" />
             </button>
           )}
 
-          <div style={{ width: 1, height: 24, background: "#e2e8f0" }} />
+          <div className="header-divider" style={{ width: 1, height: 24, background: "#e2e8f0" }} />
 
           {/* Save Project */}
           <button
             onClick={saveProject}
             disabled={saving}
             style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", fontSize: 13, fontWeight: 600,
               background: lastSaved ? "#f0fdf4" : "#6366f1", color: lastSaved ? "#16a34a" : "#fff",
               border: lastSaved ? "1px solid #bbf7d0" : "none", borderRadius: 8, cursor: saving ? "not-allowed" : "pointer",
               transition: "all 0.15s", opacity: saving ? 0.7 : 1,
             }}
           >
             {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
-            {saving ? "Saving..." : lastSaved ? "Saved" : "Save Project"}
+            <span className="save-label">{saving ? "Saving..." : lastSaved ? "Saved" : "Save"}</span>
           </button>
 
           {/* My Projects (only when signed in) */}
@@ -358,17 +358,17 @@ export default function FlipTimeline() {
             <button
               onClick={() => setShowProjects(true)}
               style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 500,
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", fontSize: 13, fontWeight: 500,
                 background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer",
               }}
             >
-              <FolderOpen size={14} /> My Projects
+              <FolderOpen size={14} /> <span className="projects-label">My Projects</span>
             </button>
           )}
 
           {/* User / Auth */}
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 28, height: 28, borderRadius: 8, background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <User size={14} color="#fff" />
               </div>
@@ -384,38 +384,39 @@ export default function FlipTimeline() {
             <button
               onClick={() => setShowAuthModal(true)}
               style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 500,
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", fontSize: 13, fontWeight: 500,
                 background: "none", color: "#6366f1", border: "1px solid #e2e8f0", borderRadius: 8, cursor: "pointer",
               }}
             >
-              <User size={14} /> Sign In
+              <User size={14} /> <span className="signin-label">Sign In</span>
             </button>
           )}
         </div>
       </header>
 
       {/* ── Nav ── */}
-      <nav style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "0 24px", display: "flex", gap: 4 }}>
+      <nav className="app-nav" style={{ background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
         {NAV_ITEMS.map((n) => {
           const Icon = n.icon;
           const active = view === n.id;
           return (
             <button
               key={n.id}
+              className="nav-btn"
               onClick={() => setView(n.id)}
               style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "12px 16px", fontSize: 13, fontWeight: active ? 600 : 500,
+                fontWeight: active ? 600 : 500,
                 color: active ? "#6366f1" : "#64748b", background: "none", border: "none", borderBottom: active ? "2px solid #6366f1" : "2px solid transparent",
                 cursor: "pointer", transition: "all 0.15s",
               }}
             >
-              <Icon size={16} /> {n.label}
+              <Icon size={16} /> <span className="nav-label">{n.label}</span>
             </button>
           );
         })}
       </nav>
 
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: 24 }}>
+      <main className="app-main">
         {/* ── Projects Home View ── */}
         {view === "home" && (
           <div>
@@ -477,7 +478,7 @@ export default function FlipTimeline() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+              <div className="project-grid">
                 {allProjects.map((project) => {
                   const taskCount = Array.isArray(project.tasks) ? project.tasks.length : 0;
                   const completedCount = Array.isArray(project.tasks) ? project.tasks.filter((t) => t.status === "done").length : 0;
@@ -562,7 +563,7 @@ export default function FlipTimeline() {
           <div style={{ marginBottom: 24 }}>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Get started with a template</div>
             <p style={{ fontSize: 14, color: "#64748b", marginBottom: 16, marginTop: 0 }}>Choose a renovation template to pre-fill your project, or start from scratch.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
+            <div className="template-grid">
               {TEMPLATES.map((t) => (
                 <button
                   key={t.name}
@@ -597,7 +598,7 @@ export default function FlipTimeline() {
         {view === "dashboard" && (
           <div>
             {/* Stat cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
+            <div className="stat-grid" style={{ marginBottom: 24 }}>
               {[
                 { label: "Total Tasks", value: stats.total, sub: `${stats.completed} completed`, color: "#6366f1", icon: LayoutList },
                 { label: "Budget Used", value: formatCurrency(stats.totalSpent), sub: `of ${formatCurrency(totalBudget)}`, color: "#10b981", icon: DollarSign },
@@ -697,7 +698,7 @@ export default function FlipTimeline() {
                   <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>New Task</span>
                   <button onClick={() => setShowNewTask(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={16} color="#94a3b8" /></button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="task-form-grid">
                   <div style={{ gridColumn: "1 / -1" }}>
                     <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4, display: "block" }}>Task Name</label>
                     <input value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} placeholder="e.g. Install kitchen cabinets" style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} onKeyDown={(e) => e.key === "Enter" && addTask()} />
