@@ -20,7 +20,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin + "/auth/callback" },
+      options: { redirectTo: window.location.origin },
     });
     if (error) {
       setError(error.message);
@@ -39,7 +39,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
+        options: { emailRedirectTo: window.location.origin },
       });
       if (error) {
         setError(error.message);
