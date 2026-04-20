@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient as supabaseCreateClient } from '@supabase/supabase-js'
 
 let client = null
 
@@ -10,6 +10,6 @@ export function createClient() {
     console.warn('Supabase env vars not set')
     return null
   }
-  client = createBrowserClient(url, key)
+  client = supabaseCreateClient(url, key)
   return client
 }
